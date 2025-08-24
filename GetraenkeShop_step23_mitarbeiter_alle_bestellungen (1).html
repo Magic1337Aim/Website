@@ -145,7 +145,6 @@ body.theme-dragon{
   <!-- RIGHT: actions -->
   <nav id="rightActions">
     <button class="btn" id="btnAdminTools" style="display:none">Admin Tools</button>
-    <button class="btn" id="btnPhoneOrders" style="display:none">Telefon Konto</button>
     <button class="btn" id="btnPublicReviews" style="display:none">Bewertungen</button>
     <button class="btn" id="btnWorkTop" style="display:none">Arbeit</button>
     <button class="btn" id="btnWishes" style="display:none">Wünsche</button>
@@ -768,51 +767,6 @@ body.theme-dragon{
   </div>
 </div>
 
-
-<!-- PHONE ORDERS MODAL -->
-<div class="modal" id="phoneModal" aria-hidden="true">
-  <div class="sheet">
-    <header class="row" style="gap:8px;justify-content:space-between;padding:10px 12px">
-      <div style="font-weight:800">Telefon Konto</div>
-      <button class="btn" onclick="closePhone()">Schließen</button>
-    </header>
-    <div class="content">
-      <div class="card" style="padding:12px">
-        <h3 style="margin:0">Anruferdaten</h3>
-        <div class="grid grid-3">
-          <div>
-            <label>Telefonnummer</label>
-            <input class="input" id="ph1-tel" type="tel" placeholder="z. B. 0172 2529605">
-          </div>
-          <div>
-            <label>Vorname</label>
-            <input class="input" id="ph1-first" placeholder="Vorname">
-          </div>
-          <div>
-            <label>Nachname</label>
-            <input class="input" id="ph1-last" placeholder="Nachname">
-          </div>
-          <div>
-            <label>Adresse</label>
-            <input class="input" id="ph1-addr" placeholder="Straße Hausnr.">
-          </div>
-          <div>
-            <label>Postleitzahl</label>
-            <input class="input" id="ph1-zip" placeholder="PLZ">
-          </div>
-        </div>
-        <div class="row" style="justify-content:flex-end;margin-top:10px">
-          <button class="btn" onclick="startPhoneOrderFrom('ph1')">Bestellung starten</button>
-        </div>
-        <div class="small muted" style="margin-top:8px">
-          Nach dem Start nutze die normale Artikelliste: Waren hinzufügen und dann „Zur Kasse“ (nur Bar/Karte).
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1424,19 +1378,6 @@ function renderOrders(){
     tbody.appendChild(tr);
   });
 }
-
-function takeOrder(id){
-  const u=current(); if(!u) return toast('Bitte einloggen.');
-  const list=lf(LS_ORDERS,[]); const o=list.find(x=>x.id===id); if(!o) return;
-  if(o.assignedTo && o.assignedTo!==u.email){
-    if(!confirm('Diese Bestellung ist bereits zugewiesen. Trotzdem übernehmen?')) return;
-  }
-  o.assignedTo = u.email;
-  o.status = 'auslieferung';
-  sf(LS_ORDERS,list);
-  toast('Bestellung übernommen.');
-  renderOrders(); renderMyOrders();
-}
 function assignOrder(id){
   const list=lf(LS_ORDERS,[]); const o=list.find(x=>x.id===id); if(!o) return;
   const sel=$(`#as-${id}`); o.assignedTo = sel.value||null; o.status='auslieferung';
@@ -1480,41 +1421,18 @@ $$('#workModal .tab').forEach(tab=>{
     $('#tab-'+tab.dataset.tab).style.display='block';
   });
 });
-
 function renderMyOrders(){
   const tbody=$('#myOrdersTable tbody'); if(!tbody) return;
   const u=current(); if(!u) return;
-  const list=lf(LS_ORDERS,[]);
+  const list=lf(LS_ORDERS,[]).filter(o=>o.assignedTo===u.email);
   tbody.innerHTML='';
   list.forEach(o=>{
-    const name = (o.channel==='phone' && o.phoneOrder) ?
-      `${(o.phoneOrder.firstName||'').trim()} ${(o.phoneOrder.lastName||'').trim()}`.trim() || (o.name||o.email||'Gast') :
-      (o.name || o.email || 'Gast');
-    let delivery = '';
-    if(o.delivery && o.delivery.type==='pickup'){
-      delivery = 'Abholung';
-    }else if(o.delivery && o.delivery.type==='date'){
-      delivery = `${o.delivery.date||''}${o.delivery.slot?` • ${o.delivery.slot}`:''}`;
-    }else if(o.channel==='phone' && o.phoneOrder){
-      delivery = `${o.phoneOrder.address||''}${o.phoneOrder.zip?` • ${o.phoneOrder.zip}`:''}`;
-    }else{
-      delivery = '—';
-    }
     const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${new Date(o.ts).toLocaleString()}</td>
-      <td>${escapeHtml(name)}</td>
-      <td>${escapeHtml(delivery)}</td>
-      <td>${euro(o.total)}</td>
-      <td>${escapeHtml(o.status||'neu')}</td>
-      <td>
-        <button class="btn small" onclick="takeOrder('${o.id}')">Ausliefern</button>
-        <button class="btn small" onclick="setOrderStatus('${o.id}','zugestellt')">Zugestellt</button>
-        <button class="btn small" onclick="cancelOrder('${o.id}')">Stornieren</button>
-      </td>`;
+    tr.innerHTML = `<td>${new Date(o.ts).toLocaleString()}</td><td>${escapeHtml(o.id)}</td><td>${escapeHtml(o.email||'Gast')}</td><td>${euro(o.total)}</td><td>${escapeHtml(o.status)}</td>
+      <td><button class="btn small" onclick="setOrderStatus('${o.id}','zugestellt')">Zugestellt</button></td>`;
     tbody.appendChild(tr);
   });
 }
-
 function submitClosing(){
   const u=current(); if(!u) return;
   const file=$('#clReceipt').files[0];
@@ -2299,143 +2217,6 @@ function viewSettlements(email){
   alert(list.map(s=>`• ${s.date}: Umsatz ${euro(s.turnover)} | PayPal ${euro(s.sums.pp)} | EC ${euro(s.sums.cc)} | Sonstiges ${euro(s.sums.misc)} | Cash ${euro(s.sums.cash)}`).join('\n'));
 }
 
-
-/*** Phone Orders (Telefon Konto) ***/
-let activePhoneOrder = null;
-
-function openPhone(){
-  const u=current();
-  if(!(u && (u.role==='employee' || u.role==='owner'))){
-    toast('Nur für Mitarbeiter/in oder Inhaber/in.');
-    return;
-  }
-  // reset fields
-  ['ph1-tel','ph1-first','ph1-last','ph1-addr','ph1-zip'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('phoneModal').classList.add('open');
-}
-function closePhone(){ document.getElementById('phoneModal').classList.remove('open'); }
-
-function startPhoneOrderFrom(prefix){
-  const tel = (document.getElementById(prefix+'-tel')?.value||'').trim();
-  const first = (document.getElementById(prefix+'-first')?.value||'').trim();
-  const last = (document.getElementById(prefix+'-last')?.value||'').trim();
-  const addr = (document.getElementById(prefix+'-addr')?.value||'').trim();
-  const zip = (document.getElementById(prefix+'-zip')?.value||'').trim();
-  if(tel.length < 5) { toast('Telefonnummer eingeben.'); return; }
-  if(first.length < 2) { toast('Vorname eingeben.'); return; }
-  if(last.length < 2)  { toast('Nachname eingeben.'); return; }
-  if(addr.length < 5)  { toast('Adresse eingeben.'); return; }
-  if(zip.length < 4)   { toast('PLZ eingeben.'); return; }
-  const u=current();
-  activePhoneOrder = { phone: tel, firstName: first, lastName: last, address: addr, zip: zip, createdBy: (u?.email||'') };
-  closePhone();
-  // neuer Warenkorb nur für diese Telefonbestellung
-  clearCart();
-  toggleCart(true);
-  toast('Telefonbestellung gestartet: Artikel wählen und „Zur Kasse“.');
-}
-
-// Header button wiring
-const _btnPhone = document.getElementById('btnPhoneOrders');
-if(_btnPhone) _btnPhone.addEventListener('click', ()=>openPhone());
-
-// Extend header sync to show the button
-(function(){
-  const _origSync = syncHeader;
-  window.syncHeader = function(){
-    _origSync();
-    const u=current();
-    const show = !!(u && (u.role==='employee' || u.role==='owner'));
-    const b=document.getElementById('btnPhoneOrders');
-    if(b) b.style.display = show ? 'inline-flex' : 'none';
-  };
-})();
-
-// Limit payment methods for active phone orders (only card or cash)
-(function(){
-  const _origOpenPayment = openPayment;
-  window.openPayment = function(){
-    _origOpenPayment();
-    if(activePhoneOrder){
-      $$('input[name="pm"]').forEach(r=>{
-        const allowed = (r.value==='card' || r.value==='cash');
-        r.disabled = !allowed || r.disabled; // keep disabled if disabled by settings
-        if(!allowed && r.checked){
-          // prefer card if available, otherwise cash
-          const card = $$('input[name="pm"]').find(x=>x.value==='card' && !x.disabled);
-          const cash = $$('input[name="pm"]').find(x=>x.value==='cash' && !x.disabled);
-          if(card) card.checked = true; else if(cash) cash.checked = true;
-        }
-      });
-    }
-  };
-})();
-
-// Attach phone meta to newly created orders
-(function(){
-  const _origFinalize = finalizeOrder;
-  window.finalizeOrder = function(method, meta){
-    const beforeCount = lf(LS_ORDERS,[]).length;
-    _origFinalize(method, meta);
-    // After finalize, augment the last order if a phone order is active (and a new order has been added)
-    const list = lf(LS_ORDERS,[]);
-    if(list.length > beforeCount && activePhoneOrder){
-      const u=current();
-      const o = list[list.length-1];
-      o.channel = 'phone';
-      o.phoneOrder = Object.assign({}, activePhoneOrder);
-      if(!o.assignedTo) o.assignedTo = u?.email || null;
-      // ensure no email is mistakenly set for callers
-      if(typeof o.email !== 'string') o.email = '';
-      sf(LS_ORDERS, list);
-      activePhoneOrder = null;
-    }
-  };
-})();
-
-
-/*** Phone Orders: decorate rows in Admin (Bestellungen) and Work (Bestellungen) ***/
-(function(){
-  function decoratePhoneRows(){
-    const list = lf(LS_ORDERS,[]);
-    list.forEach(o=>{
-      if(o && o.channel==='phone' && o.phoneOrder){
-        let tr = null;
-        const sel = document.getElementById('as-'+o.id);
-        if(sel) tr = sel.closest('tr');
-        if(!tr){
-          const btn = document.querySelector(`button[onclick="setOrderStatus('${o.id}','zugestellt')"]`);
-          if(btn) tr = btn.closest('tr');
-        }
-        if(!tr) return;
-        const tds = tr.querySelectorAll('td');
-        // Kunde column (3rd)
-        if(tds.length >= 3){
-          const name = ((o.phoneOrder.firstName||'') + ' ' + (o.phoneOrder.lastName||'')).trim() || (o.name||o.email||'Gast');
-          const phone = o.phoneOrder.phone || '';
-          const badge = '<span class="small muted" style="border:1px solid var(--line);padding:2px 6px;border-radius:999px;margin-left:6px">Telefon</span>';
-          tds[2].innerHTML = `<div>${escapeHtml(name)} ${badge}</div>` + (phone? `<div class="small muted">${escapeHtml(phone)}</div>` : '');
-        }
-        // Lieferung/Adresse column (4th)
-        if(tds.length >= 4){
-          const adr = o.phoneOrder.address || '';
-          const zip = o.phoneOrder.zip || '';
-          if(adr || zip){
-            tds[3].innerHTML = `<div>${escapeHtml(adr)}</div>` + (zip? `<div class="small muted">${escapeHtml(zip)}</div>` : '');
-          }
-        }
-      }
-    });
-  }
-  const _renderOrders = window.renderOrders;
-  if(typeof _renderOrders === 'function'){
-    window.renderOrders = function(){ _renderOrders(); decoratePhoneRows(); };
-  }
-  const _renderMyOrders = window.renderMyOrders;
-  if(typeof _renderMyOrders === 'function'){
-    window.renderMyOrders = function(){ _renderMyOrders(); decoratePhoneRows(); };
-  }
-})();
 </script>
 
 <!-- SHARE MODAL -->
@@ -2457,6 +2238,230 @@ if(_btnPhone) _btnPhone.addEventListener('click', ()=>openPhone());
     </div>
   </div>
 </div>
+
+
+<!-- Firebase SDK (optional for public orders sync) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+
+<script>
+/*** Public Orders Sync (safe, orders-only) ***/
+(function(){
+  let FB_CONF = (window.FB_HARDCODED_CONF || null) || (function(){ try{ return JSON.parse(localStorage.getItem('site_fb_conf')||'{}'); }catch(e){ return {}; } })();
+  let FB_ENABLED = !!(FB_CONF && FB_CONF.apiKey && FB_CONF.projectId);
+  let FB_DB = null;
+  let unsubOrders = null;
+  const LS_ORDERS_KEY = "site_orders_v1";
+
+  function log(){ /* console.log('[orders-sync]', ...arguments); */ }
+  function safe(fn){ try{ return fn(); }catch(e){ console.warn('[orders-sync]', e); } }
+  function lf(k, d){ try{ return JSON.parse(localStorage.getItem(k)||'null')||d; }catch(e){ return d; } }
+  function sf(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+  function init(){ 
+    if(!FB_ENABLED || !window.firebase) return;
+    try{ if(firebase.apps && firebase.apps.length===0) firebase.initializeApp(FB_CONF); }catch(e){ console.warn('[orders-sync] app init',e); }
+    try{ FB_DB = firebase.firestore(); }catch(e){ console.warn('[orders-sync] fs init',e); FB_ENABLED=false; return; }
+    if(firebase.auth){ try{ firebase.auth().signInAnonymously().catch(()=>{}).then(start); }catch(e){ start(); } } else start();
+  }
+  function start(){ 
+    if(!FB_DB) return;
+    try{ if(unsubOrders) unsubOrders(); }catch(e){}
+    unsubOrders = FB_DB.collection('orders_v1').orderBy('ts','asc').onSnapshot(snap=>{ 
+      const all=[]; snap.forEach(doc=>{ const o=doc.data(); if(o && o.id) all.push(o); });
+      sf(LS_ORDERS_KEY, all);
+      safe(()=>window.renderOrders && window.renderOrders());
+      safe(()=>window.renderMyOrders && window.renderMyOrders());
+    });
+    pushLocalOnce();
+  }
+  async function saveOrderRemote(o){ 
+    if(!FB_DB || !o || !o.id) return;
+    try{ await FB_DB.collection('orders_v1').doc(o.id).set(o, {merge:true}); }catch(e){ console.warn('[orders-sync] save', e); }
+  }
+  async function patchOrderRemote(id, patch){ 
+    if(!FB_DB || !id) return;
+    try{ await FB_DB.collection('orders_v1').doc(id).set(patch, {merge:true}); }catch(e){ console.warn('[orders-sync] patch', e); }
+  }
+  async function pushLocalOnce(){ 
+    const local = lf(LS_ORDERS_KEY, []);
+    if(!Array.isArray(local)) return;
+    for(const o of local){ if(!(o && o.id)) continue; await saveOrderRemote(o); }
+  }
+
+  function installHooks(max=20){ 
+    const has = { f: typeof window.finalizeOrder==='function', a: typeof window.assignOrder==='function', s: typeof window.setOrderStatus==='function', c: typeof window.cancelOrder==='function' };
+    if(!(has.f && has.a && has.s && has.c)){ 
+      if(max>0) return setTimeout(()=>installHooks(max-1), 150);
+      return;
+    }
+    if(window.__ordersSyncPatched) return; window.__ordersSyncPatched = true;
+
+    const _finalize = window.finalizeOrder;
+    window.finalizeOrder = function(method, meta){ 
+      const before = lf(LS_ORDERS_KEY, []).length;
+      const ret = _finalize.apply(this, arguments);
+      const after = lf(LS_ORDERS_KEY, []);
+      let newest = null; for(const o of after) if(!newest || (o.ts>newest.ts)) newest = o;
+      if(newest && FB_ENABLED && FB_DB) saveOrderRemote(newest);
+      return ret;
+    };
+
+    const _assign = window.assignOrder;
+    window.assignOrder = function(id){ 
+      const ret = _assign.apply(this, arguments);
+      if(FB_ENABLED && FB_DB){ const list=lf(LS_ORDERS_KEY,[]); const o=list.find(x=>x.id===id); if(o) saveOrderRemote(o); }
+      return ret;
+    };
+
+    const _set = window.setOrderStatus;
+    window.setOrderStatus = function(id,status){ 
+      const ret = _set.apply(this, arguments);
+      if(FB_ENABLED && FB_DB) patchOrderRemote(id, { status });
+      return ret;
+    };
+
+    const _cancel = window.cancelOrder;
+    window.cancelOrder = function(id){ 
+      const ret = _cancel.apply(this, arguments);
+      if(FB_ENABLED && FB_DB) patchOrderRemote(id, { status: 'storniert' });
+      return ret;
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){ 
+    try{ init(); }catch(e){ console.warn('[orders-sync] init', e); }
+    installHooks();
+  });
+})();
+</script>
+
+
+<script>
+/*** Public Users Sync (safe) ***/
+(function(){
+  let FB_CONF = (window.FB_HARDCODED_CONF || null) || (function(){ try{ return JSON.parse(localStorage.getItem('site_fb_conf')||'{}'); }catch(e){ return {}; } })();
+  let FB_ENABLED = !!(FB_CONF && FB_CONF.apiKey && FB_CONF.projectId);
+  let FB_DB = null;
+  let unsubUsers = null;
+  const LS_USERS_KEY = "site_users_v1";
+
+  function lf(k, d){ try{ return JSON.parse(localStorage.getItem(k)||'null')||d; }catch(e){ return d; } }
+  function sf(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  function safe(fn){ try{ return fn(); }catch(e){ console.warn('[users-sync]', e); } }
+
+  function init(){
+    if(!FB_ENABLED || !window.firebase) return;
+    try{ if(firebase.apps && firebase.apps.length===0) firebase.initializeApp(FB_CONF); }catch(e){ /* app may already be init by orders-sync */ }
+    try{ FB_DB = firebase.firestore(); }catch(e){ console.warn('[users-sync] fs init', e); FB_ENABLED=false; return; }
+    if(firebase.auth){ try{ firebase.auth().signInAnonymously().catch(()=>{}).then(start); }catch(e){ start(); } } else start();
+  }
+  function start(){
+    if(!FB_DB) return;
+    try{ if(unsubUsers) unsubUsers(); }catch(e){}
+    unsubUsers = FB_DB.collection('users_v1').orderBy('createdAt','asc').onSnapshot(snap=>{
+      const cloud=[]; snap.forEach(doc=>{ const u=doc.data(); if(u && u.email) cloud.push(u); });
+      const local = lf(LS_USERS_KEY, []);
+      // merge: preserve local password if present
+      const merged = cloud.map(u=>{
+        const loc = local.find(x=>x.email && x.email.toLowerCase()===u.email.toLowerCase());
+        const copy = Object.assign({}, u);
+        if(loc && loc.password) copy.password = loc.password; // keep plaintext locally for login
+        return copy;
+      });
+      // also include any local-only users (e.g., created offline) that aren't in cloud yet
+      local.forEach(loc=>{
+        if(!cloud.find(u=>u.email && loc.email && u.email.toLowerCase()===loc.email.toLowerCase())) merged.push(loc);
+      });
+      sf(LS_USERS_KEY, merged);
+      safe(()=>window.renderEmployees && window.renderEmployees());
+      safe(()=>window.renderCustomers && window.renderCustomers());
+    });
+    pushLocalOnce();
+  }
+  async function saveUserRemote(u){
+    if(!FB_DB || !u || !u.email) return;
+    const copy = Object.assign({}, u);
+    delete copy.password; // never push plaintext password
+    try{ await FB_DB.collection('users_v1').doc(u.email).set(copy, {merge:true}); }catch(e){ console.warn('[users-sync] save', e); }
+  }
+  async function patchUserRemote(email, patch){
+    if(!FB_DB || !email) return;
+    try{ await FB_DB.collection('users_v1').doc(email).set(patch, {merge:true}); }catch(e){ console.warn('[users-sync] patch', e); }
+  }
+  async function pushLocalOnce(){
+    const local = lf(LS_USERS_KEY, []);
+    if(!Array.isArray(local)) return;
+    for(const u of local){
+      if(!(u && u.email)) continue;
+      await saveUserRemote(u);
+    }
+  }
+
+  function installHooks(max=20){
+    const has = {
+      reg: typeof window.registerCustomer==='function',
+      ce:  typeof window.createEmployee==='function',
+      ee:  typeof window.editEmployee==='function',
+      tg:  typeof window.toggleUser==='function'
+    };
+    if(!(has.reg && has.ce && has.ee && has.tg)){
+      if(max>0) return setTimeout(()=>installHooks(max-1), 150);
+      return;
+    }
+    if(window.__usersSyncPatched) return; window.__usersSyncPatched = true;
+
+    const _reg = window.registerCustomer;
+    window.registerCustomer = function(ev){
+      const before = lf(LS_USERS_KEY, []).length;
+      const ret = _reg.apply(this, arguments);
+      const afterList = lf(LS_USERS_KEY, []);
+      if(afterList.length>before){
+        const u = afterList[afterList.length-1];
+        if(FB_ENABLED && FB_DB) saveUserRemote(u);
+      }
+      return ret;
+    };
+
+    const _ce = window.createEmployee;
+    window.createEmployee = function(){
+      const before = lf(LS_USERS_KEY, []).length;
+      const ret = _ce.apply(this, arguments);
+      const afterList = lf(LS_USERS_KEY, []);
+      if(afterList.length>before){
+        const u = afterList[afterList.length-1];
+        if(FB_ENABLED && FB_DB) saveUserRemote(u);
+      }
+      return ret;
+    };
+
+    const _ee = window.editEmployee;
+    window.editEmployee = function(id){
+      const ret = _ee.apply(this, arguments);
+      const list = lf(LS_USERS_KEY, []);
+      const u = list.find(x=>x.id===id);
+      if(u && FB_ENABLED && FB_DB) patchUserRemote(u.email, { employeeDiscountPct: u.employeeDiscountPct||0 });
+      return ret;
+    };
+
+    const _tg = window.toggleUser;
+    window.toggleUser = function(id){
+      const list = lf(LS_USERS_KEY, []);
+      const u = list.find(x=>x.id===id);
+      const ret = _tg.apply(this, arguments);
+      if(u && FB_ENABLED && FB_DB) patchUserRemote(u.email, { active: (u.active!==false) });
+      return ret;
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    try{ init(); }catch(e){ console.warn('[users-sync] init', e); }
+    installHooks();
+  });
+})();
+</script>
 
 </body>
 </html>
