@@ -133,11 +133,10 @@ body.theme-dragon{
 .theme-dragon .card{animation:dragonPulse 6s ease-in-out infinite}
 </style>
 
-<!-- Firebase SDK (for public realtime sync on GitHub Pages) -->
+<!-- Firebase SDK (optional; used if configured) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
 </head>
 <body>
 <header>
@@ -420,16 +419,16 @@ body.theme-dragon{
           <p class="small muted">Du kannst die Löschung beantragen. Der Inhaber bestätigt und löscht oder lehnt ab.</p>
           <button class="btn danger" onclick="requestDeletion()">Löschung beantragen</button>
         </div>
-      
+      </div>
+    
         <div class="card" style="padding:12px">
           <h3 style="margin:0">Bestellungen</h3>
-          <p class="small muted">Hier kannst du deine eigenen Bestellungen ansehen.</p>
+          <p class="small muted">Nur eigene Bestellungen anzeigen (Kunde/Mitarbeiter/Inhaber).</p>
           <div class="row" style="justify-content:flex-end;margin-top:8px">
             <button class="btn" onclick="openMyOrders()">Öffnen</button>
           </div>
         </div>
 </div>
-    </div>
   </div>
 </div>
 
@@ -739,46 +738,16 @@ body.theme-dragon{
           </div>
         </div>
         <div class="grid grid-3" style="margin-top:8px">
-          <div>
-            <div class="small muted">Bestell-ID</div>
-            <div id="detId">–</div>
-          </div>
-          <div>
-            <div class="small muted">Datum</div>
-            <div id="detDate">–</div>
-          </div>
-          <div>
-            <div class="small muted">Zahlung</div>
-            <div id="detPay">–</div>
-          </div>
-          <div>
-            <div class="small muted">Kunde</div>
-            <div id="detCustomer">–</div>
-          </div>
-          <div>
-            <div class="small muted">Telefon</div>
-            <div id="detPhone">–</div>
-          </div>
-          <div>
-            <div class="small muted">Lieferung/Abholung</div>
-            <div id="detDelivery">–</div>
-          </div>
-          <div>
-            <div class="small muted">Lieferzeitfenster</div>
-            <div id="detTimeWindow">–</div>
-          </div>
-          <div>
-            <div class="small muted">Fahrer/Zuordnung</div>
-            <div id="detDriver">–</div>
-          </div>
-          <div class="grid-span-3">
-            <div class="small muted">Adresse</div>
-            <div id="detAddress">–</div>
-          </div>
-          <div class="grid-span-3">
-            <div class="small muted">Notiz</div>
-            <div id="detNotes">–</div>
-          </div>
+          <div><div class="small muted">Bestell-ID</div><div id="detId">–</div></div>
+          <div><div class="small muted">Datum</div><div id="detDate">–</div></div>
+          <div><div class="small muted">Zahlung</div><div id="detPay">–</div></div>
+          <div><div class="small muted">Kunde</div><div id="detCustomer">–</div></div>
+          <div><div class="small muted">Telefon</div><div id="detPhone">–</div></div>
+          <div><div class="small muted">Lieferung/Abholung</div><div id="detDelivery">–</div></div>
+          <div><div class="small muted">Lieferzeitfenster</div><div id="detTimeWindow">–</div></div>
+          <div><div class="small muted">Fahrer/Zuordnung</div><div id="detDriver">–</div></div>
+          <div class="grid-span-3"><div class="small muted">Adresse</div><div id="detAddress">–</div></div>
+          <div class="grid-span-3"><div class="small muted">Notiz</div><div id="detNotes">–</div></div>
         </div>
         <div style="margin-top:10px">
           <table class="table" id="myOrderItems">
@@ -796,7 +765,6 @@ body.theme-dragon{
     </div>
   </div>
 </div>
-
 <!-- WORK MODAL (für Mitarbeiter) -->
 <div class="modal" id="workModal" aria-hidden="true">
   <div class="sheet">
@@ -2354,7 +2322,7 @@ function viewSettlements(email){
 (function(){
   function euroSafe(x){ try{ return (typeof euro==='function') ? euro(x||0) : ((x||0).toFixed ? (x||0).toFixed(2)+'€' : (x||0)+'€'); }catch(e){ return (x||0)+'€'; } }
   function esc(s){ try{ return (typeof escapeHtml==='function') ? escapeHtml(String(s||'')) : String(s||''); }catch(e){ return String(s||''); } }
-  function loadOrders(){ try{ return JSON.parse(localStorage.getItem(LS_ORDERS)||'[]'); }catch(e){ return []; } }
+  function loadOrders(){ try{ return JSON.parse(localStorage.getItem("site_orders_v1")||'[]'); }catch(e){ return []; } }
   function currentUser(){ try{ return (typeof current==='function')? current(): null; }catch(e){ return null; } }
   function orderId(o){ return o.id || o.oid || o.code || ''; }
   function orderStatus(o){ return (o.status||'neu'); }
@@ -2382,7 +2350,6 @@ function viewSettlements(email){
     var total = Number(o.total!=null ? o.total : (sub + pf - disc));
     return {sub:sub, pf:pf, disc:disc, total:total};
   }
-
   function renderMyOrdersList(){
     var u = currentUser();
     if(!u || u.role==='guest'){ return; }
@@ -2410,16 +2377,14 @@ function viewSettlements(email){
       tbody.appendChild(tr);
     });
   }
-
   window.openMyOrders = function(){
     const u = currentUser();
-    if(!u || u.role==='guest'){ return (typeof toast==='function') && toast('Bitte als Kunde/Mitarbeiter/Inhaber einloggen.'); }
+    if(!u || u.role==='guest'){ return (typeof toast==='function') && toast('Bitte einloggen.'); }
     var m = document.getElementById('myOrdersModal'); if(m) m.classList.add('open');
     bindMyOrdersFilters();
     renderMyOrdersList();
   };
   window.closeMyOrders = function(){ var m=document.getElementById('myOrdersModal'); if(m) m.classList.remove('open'); };
-
   function bindMyOrdersFilters(){
     var sel = document.getElementById('myOrdersStatus');
     var q = document.getElementById('myOrdersSearch');
@@ -2428,8 +2393,7 @@ function viewSettlements(email){
     if(q && !q._bound){ q.addEventListener('input', renderMyOrdersList); q._bound = true; }
     if(r && !r._bound){ r.addEventListener('click', renderMyOrdersList); r._bound = true; }
   }
-
-  function showMyOrderDetail(o){
+  window.showMyOrderDetail = function(o){
     var t = calcTotals(o);
     function set(id, txt){ var el=document.getElementById(id); if(el) el.textContent = txt; }
     set('detId', orderId(o) || '—');
@@ -2442,11 +2406,9 @@ function viewSettlements(email){
     set('detDriver', orderDriver(o));
     set('detAddress', orderAddr(o) || '—');
     set('detNotes', (o.notes||o.note||'—'));
-
     var tbody = document.querySelector('#myOrderItems tbody');
-    if(tbody){ tbody.innerHTML=''; }
-    var items = Array.isArray(o.items)? o.items: [];
-    items.forEach(function(it){
+    if(tbody) tbody.innerHTML='';
+    (Array.isArray(o.items)? o.items: []).forEach(function(it){
       var qty = Number(it.qty||it.quantity||1);
       var price = Number(it.price||it.unitPrice||it.p||0);
       var line = (qty*price)||0;
@@ -2454,64 +2416,47 @@ function viewSettlements(email){
       tr.innerHTML = '<td>'+ esc(it.name || it.title || '—') +'</td><td>'+ esc(qty) +'</td><td>'+ esc(euroSafe(price)) +'</td><td>'+ esc(euroSafe(line)) +'</td>';
       tbody && tbody.appendChild(tr);
     });
-    set('detSub', euroSafe(t.sub));
-    set('detPfand', euroSafe(t.pf));
-    set('detDiscount', t.disc ? ('−'+euroSafe(t.disc)) : '0,00€');
-    set('detTotal', euroSafe(t.total));
-
-    var card = document.getElementById('myOrderDetail');
-    if(card){ card.style.display=''; }
-
+    var totals = calcTotals(o);
+    set('detSub', euroSafe(totals.sub));
+    set('detPfand', euroSafe(totals.pf));
+    set('detDiscount', totals.disc ? ('−'+euroSafe(totals.disc)) : '0,00€');
+    set('detTotal', euroSafe(totals.total));
+    var card = document.getElementById('myOrderDetail'); if(card) card.style.display='';
     var btnCopy = document.getElementById('myOrderCopy');
     if(btnCopy && !btnCopy._bound){
       btnCopy._bound = true;
       btnCopy.addEventListener('click', function(){
-        try{
-          var lines = [];
-          lines.push('Bestell-ID: '+ (orderId(o)||'—'));
-          lines.push('Datum: '+ new Date(o.ts||Date.now()).toLocaleString());
-          lines.push('Zahlung: '+ orderPay(o));
-          lines.push('Kunde: '+ (orderName(o)||'—'));
-          lines.push('Telefon: '+ (orderPhone(o)||'—'));
-          lines.push('Lieferung/Abholung: '+ orderDeliv(o));
-          lines.push('Lieferzeitfenster: '+ orderTimeWindow(o));
-          lines.push('Fahrer/Zuordnung: '+ orderDriver(o));
-          lines.push('Adresse: '+ (orderAddr(o)||'—'));
-          lines.push('Notiz: '+ (o.notes||o.note||'—'));
-          lines.push('--- Artikel ---');
-          (Array.isArray(o.items)? o.items: []).forEach(function(it){
-            var qty = Number(it.qty||it.quantity||1);
-            var price = Number(it.price||it.unitPrice||it.p||0);
-            lines.push(qty+' × '+(it.name||'—')+' @ '+euroSafe(price));
-          });
-          lines.push('Zwischensumme: '+euroSafe(t.sub));
-          lines.push('Pfand: '+euroSafe(t.pf));
-          lines.push('Rabatt: '+(t.disc? '−'+euroSafe(t.disc): '0,00€'));
-          lines.push('Gesamt: '+euroSafe(t.total));
-          var blob = lines.join('\\n');
-          navigator.clipboard && navigator.clipboard.writeText(blob);
-          if(typeof toast==='function') toast('Details kopiert.');
-        }catch(e){ console.warn(e); }
+        var lines = [];
+        lines.push('Bestell-ID: '+ (orderId(o)||'—'));
+        lines.push('Datum: '+ new Date(o.ts||Date.now()).toLocaleString());
+        lines.push('Zahlung: '+ orderPay(o));
+        lines.push('Kunde: '+ (orderName(o)||'—'));
+        lines.push('Telefon: '+ (orderPhone(o)||'—'));
+        lines.push('Lieferung/Abholung: '+ orderDeliv(o));
+        lines.push('Lieferzeitfenster: '+ orderTimeWindow(o));
+        lines.push('Fahrer/Zuordnung: '+ orderDriver(o));
+        lines.push('Adresse: '+ (orderAddr(o)||'—'));
+        lines.push('Notiz: '+ (o.notes||o.note||'—'));
+        lines.push('--- Artikel ---');
+        (Array.isArray(o.items)? o.items: []).forEach(function(it){
+          var qty = Number(it.qty||it.quantity||1);
+          var price = Number(it.price||it.unitPrice||it.p||0);
+          lines.push(qty+' × '+(it.name||'—')+' @ '+euroSafe(price));
+        });
+        var t = calcTotals(o);
+        lines.push('Zwischensumme: '+euroSafe(t.sub));
+        lines.push('Pfand: '+euroSafe(t.pf));
+        lines.push('Rabatt: '+(t.disc? '−'+euroSafe(t.disc): '0,00€'));
+        lines.push('Gesamt: '+euroSafe(t.total));
+        navigator.clipboard && navigator.clipboard.writeText(lines.join('\n'));
+        if(typeof toast==='function') toast('Details kopiert.');
       });
     }
     var btnClose = document.getElementById('myOrderCloseDetail');
-    if(btnClose && !btnClose._bound){
-      btnClose._bound = true;
-      btnClose.addEventListener('click', function(){ var c=document.getElementById('myOrderDetail'); if(c) c.style.display='none'; });
-    }
+    if(btnClose && !btnClose._bound){ btnClose._bound = true; btnClose.addEventListener('click', function(){ var c=document.getElementById('myOrderDetail'); if(c) c.style.display='none'; }); }
     var btnPrint = document.getElementById('myOrderPrint');
-    if(btnPrint && !btnPrint._bound){
-      btnPrint._bound = true;
-      btnPrint.addEventListener('click', function(){
-        try{
-          var w = window.open('', '_blank');
-          w.document.open();
-          w.document.write(myOrderBuildPrintable(o));
-          w.document.close();
-        }catch(e){ console.warn(e); }
-      });
-    }
-  }
+    if(btnPrint && !btnPrint._bound){ btnPrint._bound = true; btnPrint.addEventListener('click', function(){ try{ var w = window.open('', '_blank'); w.document.open(); w.document.write(myOrderBuildPrintable(o)); w.document.close(); }catch(e){ console.warn(e); } }); }
+  };
   window.myOrderBuildPrintable = function(o){
     var t = calcTotals(o);
     var rows = (Array.isArray(o.items)? o.items: []).map(function(it){
@@ -2527,7 +2472,7 @@ function viewSettlements(email){
       + '<div class="grid">'
       + '<div><div class="muted">Bestell-ID</div><div>'+esc(orderId(o)||'—')+'</div></div>'
       + '<div><div class="muted">Datum</div><div>'+esc(new Date(o.ts||Date.now()).toLocaleString())+'</div></div>'
-      + '<div><div class="muted">Zahlung</div><div>'+esc(o.payment||o.payMethod||o.method||'—')+'</div></div>'
+      + '<div><div class="muted">Zahlung</div><div>'+esc(orderPay(o))+'</div></div>'
       + '<div><div class="muted">Kunde</div><div>'+esc(orderName(o)||'—')+'</div></div>'
       + '<div><div class="muted">Telefon</div><div>'+esc(orderPhone(o)||'—')+'</div></div>'
       + '<div><div class="muted">Lieferung/Abholung</div><div>'+esc(orderDeliv(o))+'</div></div>'
@@ -2545,13 +2490,14 @@ function viewSettlements(email){
       + '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},200);});</script>'
       + '
 <script>
+// Auto-clear cart after order (safe hook)
 (function(){
   function clearCartAfter(){
     try{
       if(typeof clearCart==='function') clearCart();
       if(typeof toggleCart==='function') toggleCart(false);
       if(typeof toast==='function') toast('Bestellung gesendet. Warenkorb geleert.');
-    }catch(e){ console.warn('[auto-clear]', e); }
+    }catch(e){}
   }
   function install(max){
     max = max||30;
@@ -2568,29 +2514,26 @@ function viewSettlements(email){
 })();
 </script>
 
-
 <script>
-/*** Public Orders Sync (robust, union, no-UI-change) ***/
+// Public Live Sync (safe/no crash if config missing)
 (function(){ 
   const LS_ORDERS = "site_orders_v1";
+  const LS_USERS  = "site_users_v1";
   function lf(k, d){ try{ return JSON.parse(localStorage.getItem(k)||'null')||d; }catch(e){ return d; } }
   function sf(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-  function safe(fn){ try{ return fn(); }catch(e){ console.warn('[orders-sync]', e); } }
-
+  function safe(fn){ try{ return fn(); }catch(e){ console.warn('[sync]', e); } }
   let FB_CONF = (window.FB_HARDCODED_CONF || null) || (function(){ try{ return JSON.parse(localStorage.getItem('site_fb_conf')||'{}'); }catch(e){ return {}; } })();
-  let FB_ENABLED = !!(FB_CONF && FB_CONF.apiKey && FB_CONF.projectId);
-  let DB=null, unsub=null;
+  let ENABLED = !!(FB_CONF && FB_CONF.apiKey && FB_CONF.projectId);
+  if(!ENABLED || !window.firebase) return; // do nothing if not configured
 
-  function init(){
-    if(!FB_ENABLED || !window.firebase) return;
-    try{ if(firebase.apps.length===0) firebase.initializeApp(FB_CONF); }catch(e){}
-    try{ DB = firebase.firestore(); }catch(e){ console.warn('[orders-sync] fs init', e); return; }
-    if(firebase.auth){ try{ firebase.auth().signInAnonymously().catch(()=>{}).then(start); }catch(e){ start(); } } else start();
-  }
+  try{ if(firebase.apps.length===0) firebase.initializeApp(FB_CONF); }catch(e){}
+  let DB=null;
+  try{ DB = firebase.firestore(); }catch(e){ console.warn('[sync] firestore init', e); return; }
+  if(firebase.auth){ try{ firebase.auth().signInAnonymously().catch(()=>{}).then(start); }catch(e){ start(); } } else start();
+
   function start(){
-    if(!DB) return;
-    try{ if(unsub) unsub(); }catch(e){}
-    unsub = DB.collection('orders_v1').orderBy('ts','asc').onSnapshot(s=>{
+    // Orders listener
+    DB.collection('orders_v1').orderBy('ts','asc').onSnapshot(s=>{
       const cloud=[]; s.forEach(d=>{ const o=d.data(); if(o && o.id) cloud.push(o); });
       const local = lf(LS_ORDERS, []);
       const map={};
@@ -2601,87 +2544,8 @@ function viewSettlements(email){
       safe(()=>window.renderOrders && window.renderOrders());
       safe(()=>window.renderMyOrders && window.renderMyOrders());
     });
-    pushLocalOnce();
-    hookMutations();
-  }
-  async function saveOrderRemote(o){
-    if(!DB || !o || !o.id) return;
-    try{ await DB.collection('orders_v1').doc(o.id).set(o, {merge:true}); }catch(e){ console.warn('[orders-sync] save', e); }
-  }
-  async function patchOrderRemote(id, patch){
-    if(!DB || !id) return;
-    try{ await DB.collection('orders_v1').doc(id).set(patch, {merge:true}); }catch(e){ console.warn('[orders-sync] patch', e); }
-  }
-  async function pushLocalOnce(){
-    const local = lf(LS_ORDERS, []);
-    if(!Array.isArray(local)) return;
-    for(const o of local) if(o && o.id) await saveOrderRemote(o);
-  }
-  function hookMutations(max=30){
-    const has = {
-      fin: typeof window.finalizeOrder==='function',
-      asn: typeof window.assignOrder==='function',
-      sts: typeof window.setOrderStatus==='function',
-      can: typeof window.cancelOrder==='function'
-    };
-    if(!(has.fin && has.asn && has.sts && has.can)){ if(max>0) return setTimeout(()=>hookMutations(max-1), 150); return; }
-    if(window.__ordersSyncPatched) return; window.__ordersSyncPatched = true;
-
-    const _fin = window.finalizeOrder;
-    window.finalizeOrder = function(method, meta){
-      const ret = _fin.apply(this, arguments);
-      const after = lf(LS_ORDERS, []);
-      let newest=null; for(const o of after) if(!newest || (o.ts>newest.ts)) newest=o;
-      if(newest) saveOrderRemote(newest);
-      return ret;
-    };
-    const _asn = window.assignOrder;
-    window.assignOrder = function(id){
-      const ret = _asn.apply(this, arguments);
-      const list = lf(LS_ORDERS, []); const o = list.find(x=>x.id===id);
-      if(o) saveOrderRemote(o);
-      return ret;
-    };
-    const _sts = window.setOrderStatus;
-    window.setOrderStatus = function(id, status){
-      const ret = _sts.apply(this, arguments);
-      patchOrderRemote(id, { status });
-      return ret;
-    };
-    const _can = window.cancelOrder;
-    window.cancelOrder = function(id){
-      const ret = _can.apply(this, arguments);
-      patchOrderRemote(id, { status:'storniert' });
-      return ret;
-    };
-  }
-  document.addEventListener('DOMContentLoaded', init);
-})();
-</script>
-
-
-<script>
-/*** Public Users Sync (robust, union, keep local passwords) ***/
-(function(){
-  const LS_USERS = "site_users_v1";
-  function lf(k, d){ try{ return JSON.parse(localStorage.getItem(k)||'null')||d; }catch(e){ return d; } }
-  function sf(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-  function safe(fn){ try{ return fn(); }catch(e){ console.warn('[users-sync]', e); } }
-
-  let FB_CONF = (window.FB_HARDCODED_CONF || null) || (function(){ try{ return JSON.parse(localStorage.getItem('site_fb_conf')||'{}'); }catch(e){ return {}; } })();
-  let FB_ENABLED = !!(FB_CONF && FB_CONF.apiKey && FB_CONF.projectId);
-  let DB=null, unsub=null;
-
-  function init(){
-    if(!FB_ENABLED || !window.firebase) return;
-    try{ if(firebase.apps.length===0) firebase.initializeApp(FB_CONF); }catch(e){}
-    try{ DB = firebase.firestore(); }catch(e){ console.warn('[users-sync] fs init', e); return; }
-    if(firebase.auth){ try{ firebase.auth().signInAnonymously().catch(()=>{}).then(start); }catch(e){ start(); } } else start();
-  }
-  function start(){
-    if(!DB) return;
-    try{ if(unsub) unsub(); }catch(e){}
-    unsub = DB.collection('users_v1').orderBy('createdAt','asc').onSnapshot(s=>{
+    // Users listener
+    DB.collection('users_v1').orderBy('createdAt','asc').onSnapshot(s=>{
       const cloud=[]; s.forEach(d=>{ const u=d.data(); if(u && u.email) cloud.push(u); });
       const local = lf(LS_USERS, []);
       const map={};
@@ -2690,7 +2554,7 @@ function viewSettlements(email){
         const key = u.email.toLowerCase();
         const prev = map[key]||{};
         const copy = Object.assign({}, prev, u);
-        if(prev.password) copy.password = prev.password; // keep local password only locally
+        if(prev.password) copy.password = prev.password;
         map[key] = copy;
       }
       const merged = Object.values(map).sort((a,b)=> (a.createdAt||0)-(b.createdAt||0));
@@ -2698,71 +2562,34 @@ function viewSettlements(email){
       safe(()=>window.renderEmployees && window.renderEmployees());
       safe(()=>window.renderCustomers && window.renderCustomers());
     });
-    pushLocalOnce();
-    hookMutations();
-  }
-  async function saveUserRemote(u){
-    if(!DB || !u || !u.email) return;
-    const copy = Object.assign({}, u); delete copy.password;
-    try{ await DB.collection('users_v1').doc(u.email).set(copy, {merge:true}); }catch(e){ console.warn('[users-sync] save', e); }
-  }
-  async function patchUserRemote(email, patch){
-    if(!DB || !email) return;
-    try{ await DB.collection('users_v1').doc(email).set(patch, {merge:true}); }catch(e){ console.warn('[users-sync] patch', e); }
-  }
-  async function pushLocalOnce(){
-    const local = lf(LS_USERS, []);
-    if(!Array.isArray(local)) return;
-    for(const u of local) if(u && u.email) await saveUserRemote(u);
-  }
-  function hookMutations(max=30){
-    const has = {
-      reg: typeof window.registerCustomer==='function',
-      ce:  typeof window.createEmployee==='function',
-      ee:  typeof window.editEmployee==='function',
-      tg:  typeof window.toggleUser==='function'
-    };
-    if(!(has.reg && has.ce && has.ee && has.tg)){ if(max>0) return setTimeout(()=>hookMutations(max-1), 150); return; }
-    if(window.__usersSyncPatched) return; window.__usersSyncPatched = true;
 
-    const _reg = window.registerCustomer;
-    window.registerCustomer = function(){
-      const before = lf(LS_USERS, []).length;
-      const ret = _reg.apply(this, arguments);
-      const afterList = lf(LS_USERS, []);
-      if(afterList.length>before) saveUserRemote(afterList[afterList.length-1]);
-      return ret;
-    };
-    const _ce = window.createEmployee;
-    window.createEmployee = function(){
-      const before = lf(LS_USERS, []).length;
-      const ret = _ce.apply(this, arguments);
-      const afterList = lf(LS_USERS, []);
-      if(afterList.length>before) saveUserRemote(afterList[afterList.length-1]);
-      return ret;
-    };
-    const _ee = window.editEmployee;
-    window.editEmployee = function(id){
-      const ret = _ee.apply(this, arguments);
-      try{ 
-        const list = lf(LS_USERS, []);
-        const u = list.find(x=>x.id===id);
-        if(u) patchUserRemote(u.email, { employeeDiscountPct: u.employeeDiscountPct||0 });
-      }catch(e){}
-      return ret;
-    };
+    // Hook mutations (finalizeOrder → save newest to cloud)
+    const _fin = window.finalizeOrder;
+    if(typeof _fin==='function'){
+      window.finalizeOrder = function(method, meta){
+        const ret = _fin.apply(this, arguments);
+        try{
+          const list = lf(LS_ORDERS, []);
+          let newest=null; for(const o of list) if(!newest || (o.ts>newest.ts)) newest=o;
+          if(newest) DB.collection('orders_v1').doc(newest.id).set(newest, {merge:true});
+        }catch(e){ console.warn('[sync] save order', e); }
+        return ret;
+      };
+    }
+    // Toggle user (active) hook
     const _tg = window.toggleUser;
-    window.toggleUser = function(id){
-      const ret = _tg.apply(this, arguments);
-      try{ 
-        const list = lf(LS_USERS, []);
-        const u = list.find(x=>x.id===id);
-        if(u) patchUserRemote(u.email, { active: (u.active!==false) });
-      }catch(e){}
-      return ret;
-    };
+    if(typeof _tg==='function'){
+      window.toggleUser = function(id){
+        const ret = _tg.apply(this, arguments);
+        try{
+          const users = lf(LS_USERS, []);
+          const u = users.find(x=>x.id===id);
+          if(u && u.email) DB.collection('users_v1').doc(u.email).set({active:(u.active!==false)}, {merge:true});
+        }catch(e){}
+        return ret;
+      };
+    }
   }
-  document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
 
